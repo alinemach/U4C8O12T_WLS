@@ -33,30 +33,27 @@ project(U4C8O12T_WLS C CXX ASM)
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
-# Add executable. Default name is the project name, version 0.1
-
-add_executable(U4C8O12T_WLS U4C8O12T_WLS.c )
+# Adicionar o arquivo ssd1306.c ao projeto
+add_executable(U4C8O12T_WLS U4C8O12T_WLS.c lib/ssd1306.c)
 
 pico_set_program_name(U4C8O12T_WLS "U4C8O12T_WLS")
 pico_set_program_version(U4C8O12T_WLS "0.1")
 
 # Modify the below lines to enable/disable output over UART/USB
-pico_enable_stdio_uart(U4C8O12T_WLS 1)
-pico_enable_stdio_usb(U4C8O12T_WLS 0)
+pico_enable_stdio_uart(U4C8O12T_WLS 0)
+pico_enable_stdio_usb(U4C8O12T_WLS 1)
 
 # Add the standard library to the build
 target_link_libraries(U4C8O12T_WLS
-        pico_stdlib)
+        pico_stdlib
+        hardware_i2c 
+        hardware_adc
+        hardware_pwm)
 
-# Add the standard include files to the build
+# Adicionar o diretório lib ao caminho de inclusão
 target_include_directories(U4C8O12T_WLS PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_CURRENT_LIST_DIR}/lib
 )
 
-# Add any user requested libraries
-target_link_libraries(U4C8O12T_WLS 
-        
-        )
-
 pico_add_extra_outputs(U4C8O12T_WLS)
-
