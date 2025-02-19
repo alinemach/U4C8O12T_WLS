@@ -61,11 +61,11 @@ void draw_border(ssd1306_t *ssd, uint8_t style) {
 int main() {
     stdio_init_all();
 
-     // Para ser utilizado o modo BOOTSEL com botão B
-  gpio_init(Botao_B);
-  gpio_set_dir(Botao_B, GPIO_IN);
-  gpio_pull_up(Botao_B);
-  gpio_set_irq_enabled_with_callback(Botao_B, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
+    // Para ser utilizado o modo BOOTSEL com botão B
+    gpio_init(Botao_B);
+    gpio_set_dir(Botao_B, GPIO_IN);
+    gpio_pull_up(Botao_B);
+    gpio_set_irq_enabled_with_callback(Botao_B, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
 
     // Inicializa os GPIOs
     gpio_init(JOYSTICK_PB);
@@ -75,6 +75,16 @@ int main() {
     gpio_init(Botao_A);
     gpio_set_dir(Botao_A, GPIO_IN);
     gpio_pull_up(Botao_A);
+
+    // Inicializa os LEDs
+    gpio_init(LED_GREEN_PIN);
+    gpio_set_dir(LED_GREEN_PIN, GPIO_OUT);
+
+    gpio_init(LED_RED_PIN);
+    gpio_set_dir(LED_RED_PIN, GPIO_OUT);
+
+    gpio_init(LED_BLUE_PIN);
+    gpio_set_dir(LED_BLUE_PIN, GPIO_OUT);
 
     // Inicializa o I2C
     i2c_init(I2C_PORT, 400 * 1000);
@@ -98,7 +108,6 @@ int main() {
     // Inicializa o PWM para os LEDs
     uint pwm_wrap = 4095;
     pwm_init_gpio(LED_RED_PIN, pwm_wrap);
-    //pwm_init_gpio(LED_GREEN_PIN, pwm_wrap);
     pwm_init_gpio(LED_BLUE_PIN, pwm_wrap);
 
     // Variáveis para leitura do joystick
@@ -106,9 +115,9 @@ int main() {
     bool joystick_button_state = false;
     bool button_a_state = false;
 
-// Posição inicial do quadrado no display
-uint8_t square_x = (128 - 8) / 2; // Centraliza no eixo X
-uint8_t square_y = (64 - 8) / 2;  // Centraliza no eixo Y
+    // Posição inicial do quadrado no display
+    uint8_t square_x = (128 - 8) / 2; // Centraliza no eixo X
+    uint8_t square_y = (64 - 8) / 2;  // Centraliza no eixo Y
 
     while (true) {
         // Leitura dos valores do joystick
@@ -116,28 +125,27 @@ uint8_t square_y = (64 - 8) / 2;  // Centraliza no eixo Y
         adc_value_x = adc_read();
         adc_select_input(1); // Eixo Y
         adc_value_y = adc_read();
-
+    
         // Controle do LED Azul (eixo Y)
         if (pwm_enabled) {
             pwm_set_gpio_level(LED_BLUE_PIN, abs(adc_value_y - 2048) * 2);
         }
-
+    
         // Controle do LED Vermelho (eixo X)
         if (pwm_enabled) {
             pwm_set_gpio_level(LED_RED_PIN, abs(adc_value_x - 2048) * 2);
         }
-
+    
         // Controle do LED Verde (botão do joystick)
         if (!gpio_get(JOYSTICK_PB) && !joystick_button_state) {
             joystick_button_state = true;
-            gpio_put(LED_GREEN_PIN, true);
-            //green_led_state = !green_led_state;
-            //gpio_put(LED_GREEN_PIN, green_led_state);
+            green_led_state = !green_led_state;
+            gpio_put(LED_GREEN_PIN, green_led_state);
             border_style = (border_style + 1) % 3;
         } else if (gpio_get(JOYSTICK_PB)) {
             joystick_button_state = false;
         }
-
+    
         // Controle do Botão A (ativa/desativa PWM)
         if (!gpio_get(Botao_A) && !button_a_state) {
             button_a_state = true;
@@ -150,17 +158,23 @@ uint8_t square_y = (64 - 8) / 2;  // Centraliza no eixo Y
         } else if (gpio_get(Botao_A)) {
             button_a_state = false;
         }
-
+    
         // Movimento do quadrado no display
-        square_x = 60 + (adc_value_x - 2048) / 128;
-        square_y = 28 + (adc_value_y - 2048) / 128;
-
+        square_x = 60 + (adc_value_x) / 64;
+        square_y = 18 + (adc_value_y) / 48;
+    
+        // Limites do display
+        if (square_x < 0) square_x = 0;
+        if (square_x > 120) square_x = 120; // 128 - 8 (tamanho do quadrado)
+        if (square_y < 56) square_y = 0;
+        if (square_y > 130) square_y = 56; // 64 - 8 (tamanho do quadrado)
+    
         // Limpa o display e desenha o quadrado e a borda
         ssd1306_fill(&ssd, false);
         ssd1306_rect(&ssd, square_x, square_y, 8, 8, true, true);
         draw_border(&ssd, border_style);
         ssd1306_send_data(&ssd);
-
+    
         sleep_ms(10);
     }
 }
